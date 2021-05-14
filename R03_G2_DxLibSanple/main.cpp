@@ -21,14 +21,28 @@ enum GAME_SCENE {
 	GAME_SCENE_CHANGE
 };		//ゲームのシーン
 
+//グローバル変数
 //シーンを管理する変数
 GAME_SCENE GameScene;		//現在のゲームシーン
 GAME_SCENE OldGameScene;	//前回のゲームシーン
 GAME_SCENE NextGameScene;	//次のゲームシーン
 
 //画面の切り替え
-BOOL IsFadeOut = FALSE;	//フェードアウト
-BOOL ISFadeIn = FALSE;	//フェードイン
+BOOL IsFadeOut = FALSE;		//フェードアウト
+BOOL IsFadeIn = FALSE;		//フェードイン
+
+int FadeTimeMill = 2000;						//切り替えミリ秒
+int FadeTimeMax = FadeTimeMill / 1000 * 60;		//ミリ秒をフレーム秒に変換
+
+//フェードアウト
+int FadeOutCntInit = 0;				//初期値
+int FadeOutCnt = FadeOutCntInit;	//フェードアウトのカウンタ
+int FadeOutCntMax = FadeTimeMax;	//フェードアウトのカウンタMAX
+
+//フェードイン
+int FadeInCntInit = FadeTimeMax;	//初期値
+int FadeInCnt = FadeInCntInit;		//フェードインのカウンタ
+int FadeInCntMax = FadeTimeMax;		//フェードインのカウンタMAX
 
 //プロトタイプ宣言
 VOID Title(VOID);		//タイトル画面
@@ -46,6 +60,8 @@ VOID EndDraw(VOID);	//エンド画面(描画)
 VOID Change(VOID);		//切り替え画面
 VOID ChangeProc(VOID);	//切り替え画面(処理)
 VOID ChangeDraw(VOID);	//切り替え画面(描画)
+
+VOID ChangeScene(GAME_SCENE scene);	//シーン切り替え
 
 // プログラムは WinMain から始まります
 //Windowsのプログラミング方法=(WinAPI)で動いている！
@@ -78,10 +94,9 @@ int WINAPI WinMain(
 	//円の中心点
 	int X = GAME_WIDTH / 2;
 	int Y = GAME_HEIGHT / 2;
-
 	//円の半径
 	int radius = 60;
-	int radius1 = 20;
+	int radius1 = 10;
 
 	int speed = 8;
 
@@ -106,7 +121,7 @@ int WINAPI WinMain(
 			OldGameScene = GameScene;
 		}
 
-		//
+		//シーンごとに処理を行う
 		switch (GameScene)
 		{
 		case GAME_SCENE_TITLE:
@@ -121,9 +136,23 @@ int WINAPI WinMain(
 		case GAME_SCENE_CHANGE:
 			Change();
 			break;
+		default:
+			break;
 		}
+
+		//シーンを切り替える
+		if (OldGameScene != GameScene)
+		{
+			//現在のシーンが切り替え画面でないとき
+			if (GameScene != GAME_SCENE_CHANGE)
+			{
+				NextGameScene = GameScene;		//次のシーンを保存
+				GameScene = GAME_SCENE_CHANGE;	//画面切り替えシーンに変える
+			}
+		}
+
 		//キー入力
-		if (KeyDown(KEY_INPUT_W) == TRUE)
+		if (KeyDown(KEY_INPUT_W) == TRUE || KeyDown(KEY_INPUT_UP) == TRUE)
 		{
 			Y--;		//上に移動
 			if (KeyDown(KEY_INPUT_LSHIFT) == TRUE || KeyDown(KEY_INPUT_RSHIFT) == TRUE)
@@ -131,7 +160,7 @@ int WINAPI WinMain(
 				Y -= speed;
 			}
 		}
-		if (KeyDown(KEY_INPUT_S) == TRUE)
+		if (KeyDown(KEY_INPUT_S) == TRUE || KeyDown(KEY_INPUT_DOWN) == TRUE)
 		{
 			Y++;		//下に移動
 			if (KeyDown(KEY_INPUT_LSHIFT) == TRUE || KeyDown(KEY_INPUT_RSHIFT) == TRUE)
@@ -139,7 +168,7 @@ int WINAPI WinMain(
 				Y += speed;
 			}
 		}
-		if (KeyDown(KEY_INPUT_A) == TRUE)
+		if (KeyDown(KEY_INPUT_A) == TRUE || KeyDown(KEY_INPUT_LEFT) == TRUE)
 		{
 			X--;		//左に移動
 			if (KeyDown(KEY_INPUT_LSHIFT) == TRUE || KeyDown(KEY_INPUT_RSHIFT) == TRUE)
@@ -147,7 +176,7 @@ int WINAPI WinMain(
 				X -= speed;
 			}
 		}
-		if (KeyDown(KEY_INPUT_D) == TRUE)
+		if (KeyDown(KEY_INPUT_D) == TRUE || KeyDown(KEY_INPUT_RIGHT) == TRUE)
 		{
 			X++;		//右に移動
 			if (KeyDown(KEY_INPUT_LSHIFT) == TRUE || KeyDown(KEY_INPUT_RSHIFT) == TRUE)
@@ -155,12 +184,13 @@ int WINAPI WinMain(
 				X += speed;
 			}
 		}
-		if (KeyDown(KEY_INPUT_SPACE) == TRUE)
+		if (KeyClick(KEY_INPUT_SPACE) == TRUE)
 		{
-
+			DrawCircle(X, Y, radius1, GetColor(255, 0, 255), TRUE);
+			ScreenFlip();
 		}
 
-		DrawCircle(X, Y, radius, GetColor(255, 255, 0), TRUE);
+		DrawCircle(X, Y, radius, GetColor(0, 255, 0), TRUE);
 		ScreenFlip();		//ダブルバッファリングした画面を描画
 	}
 	// ＤＸライブラリ使用の終了処理
@@ -168,7 +198,16 @@ int WINAPI WinMain(
 
 		return 0;				// ソフトの終了 
 }
-
+/// <summary>
+/// シーンを切り替える関数
+/// </summary>
+/// <param name="scene">シーン</param>
+VOID ChangeScene(GAME_SCENE scene)
+{
+	GameScene = scene;				//画面へ切り替え
+	IsFadeIn = FALSE;				//フェードインしない
+	IsFadeOut = TRUE;				//フェードアウトする
+}
 /// <summary>
 /// タイトル画面
 /// </summary>
@@ -186,6 +225,14 @@ VOID Title(VOID)
 VOID TitleProc(VOID)
 {
 	
+	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	{
+		//シーンへ切り替え
+		//次のシーンの初期化をここで行うと楽
+
+		//プレイ画面に切り替え
+		ChangeScene(GAME_SCENE_PLAY);
+	}
 	return;
 }
 /// <summary>
@@ -212,6 +259,14 @@ VOID Play(VOID)
 /// </summary>
 VOID PlayProc(VOID)
 {
+	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	{
+		//シーンへ切り替え
+		//次のシーンの初期化をここで行うと楽
+
+		//エンド画面に切り替え
+		ChangeScene(GAME_SCENE_END);
+	}
 	return;
 }
 /// <summary>
@@ -239,6 +294,14 @@ VOID End(VOID)
 /// </summary>
 VOID EndProc(VOID)
 {
+	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	{
+		//シーンへ切り替え
+		//次のシーンの初期化をここで行うと楽
+
+		//タイトル画面に切り替え
+		ChangeScene(GAME_SCENE_TITLE);
+	}
 	return;
 }
 /// <summary>
@@ -266,6 +329,47 @@ VOID Change(VOID)
 /// </summary>
 VOID ChangeProc(VOID)
 {
+	//フェードイン
+	if (IsFadeIn)
+	{
+
+		if (FadeInCnt > FadeInCntMax)
+		{
+			FadeInCnt--;		//カウンタを減らす
+		}
+		else
+		{
+			//フェードイン処理が終わった
+
+			FadeInCnt = FadeInCntInit;	//カウンタ初期化
+			IsFadeIn = FALSE;			//フェードイン処理終了
+		}
+	}
+	//フェードアウト
+	if (IsFadeOut)
+	{
+
+		if (FadeOutCnt > FadeOutCntMax)
+		{
+			FadeOutCnt--;		//カウンタを増やす
+		}
+		else
+		{
+			//フェードアウト処理が終わった
+
+			FadeOutCnt = FadeOutCntInit;	//カウンタ初期化
+			IsFadeOut = FALSE;			//フェードアウト処理終了
+		}
+	}
+
+	//切り替え処理終了
+	if (IsFadeIn == FALSE && IsFadeOut == FALSE)
+	{
+		//フェードインしてない、フェードアウトしてないとき
+		GameScene = NextGameScene;		//次のシーンに切り替え
+		OldGameScene = GameScene;		//以前のゲームシーン更新
+
+	}
 	return;
 }
 /// <summary>
@@ -273,6 +377,38 @@ VOID ChangeProc(VOID)
 /// </summary>
 VOID ChangeDraw(VOID)
 {
+	//以前のシーンを描画
+	switch (OldGameScene)
+	{
+	case GAME_SCENE_TITLE:
+		TitleDraw();		//タイトル画面の描画
+		break;
+	case GAME_SCENE_PLAY:
+		PlayDraw();			//プレイ画面の描画
+		break;
+	case GAME_SCENE_END:
+		EndDraw();			//エンド画面の描画
+		break;
+	default:
+		break;
+	}
+
+	//フェードイン
+	if (IsFadeIn == TRUE)
+	{
+		SetDrawBlendMode(DX_BLENDMODE_ALPHA, ((float)FadeInCnt / FadeInCntMax) * 255);
+	}
+	//フェードアウト
+	if (IsFadeOut == TRUE)
+	{
+		SetDrawBlendMode(DX_BLENDMODE_ALPHA, ((float)FadeOutCnt / FadeOutCntMax) * 255);
+	}
+	//四角を描画
+	DrawBox(0, 0, GAME_WIDTH, GAME_HEIGHT, GetColor(0, 0, 0), TRUE);
+
+	//半透明終了
+	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
 	DrawString(0, 0, "切り替え画面", GetColor(0, 0, 0));
 	return;
 }
