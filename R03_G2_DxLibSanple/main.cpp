@@ -1,17 +1,17 @@
-//ヘッダファイルの読み込み
-#include "DxLib.h"	//DxLibを使うときは必要
+//ヘッダーファイルの読み込み
+#include "DxLib.h"		//DxLibを使うときは必要
 #include "keyboard.h"	//キーボードの処理
-
+#include"FPS.h"			//FPSの処理
 
 //マクロ定義
-#define GAME_TITLE "ゲームタイトル"		//ゲームタイトル
-#define GAME_WIDTH 1280					//ゲーム画面の幅(ウィドス)
-#define GAME_HEIGHT 720					//ゲーム画面の高さ(ハイト)
-#define GAME_COLOR 32					//ゲームの色域
+#define GAME_TITLE	"ゲームタイトル"		//ゲームタイトル
+#define GAME_WIDTH	1280				//ゲーム画面の幅(ウィドス)
+#define GAME_HEIGHT	720					//ゲーム画面の高さ(ハイト)
+#define GAME_COLOR  32					//ゲームの色域
 
-#define GAME_ICON_ID 333				//ゲームのICONのID
+#define GAME_ICON_ID	333				//ゲームのICONのID
 
-#define GAME_WINDOW_BAR	0				//ウィンドウバーの状態
+#define GAME_WINDOW_BAR	0				//ウィンドウバーの種類
 
 //列挙型
 enum GAME_SCENE {
@@ -19,30 +19,30 @@ enum GAME_SCENE {
 	GAME_SCENE_PLAY,
 	GAME_SCENE_END,
 	GAME_SCENE_CHANGE
-};		//ゲームのシーン
+};	//ゲームのシーン
 
 //グローバル変数
 //シーンを管理する変数
-GAME_SCENE GameScene;		//現在のゲームシーン
-GAME_SCENE OldGameScene;	//前回のゲームシーン
-GAME_SCENE NextGameScene;	//次のゲームシーン
+GAME_SCENE GameScene;		//現在のゲームのシーン
+GAME_SCENE OldGameScene;	//前回のゲームのシーン
+GAME_SCENE NextGameScene;	//次のゲームのシーン
 
 //画面の切り替え
 BOOL IsFadeOut = FALSE;		//フェードアウト
 BOOL IsFadeIn = FALSE;		//フェードイン
 
-int FadeTimeMill = 2000;						//切り替えミリ秒
-int FadeTimeMax = FadeTimeMill / 1000 * 60;		//ミリ秒をフレーム秒に変換
+int fadeTimeMill = 2000;					//切り替えミリ秒
+int fadeTimeMax = fadeTimeMill / 1000 * 60;	//ミリ秒をフレーム秒に変換
 
 //フェードアウト
-int FadeOutCntInit = 0;				//初期値
-int FadeOutCnt = FadeOutCntInit;	//フェードアウトのカウンタ
-int FadeOutCntMax = FadeTimeMax;	//フェードアウトのカウンタMAX
+int fadeOutCntInit = 0;				//初期値
+int fadeOutCnt = fadeOutCntInit;	//フェードアウトのカウンタ
+int fadeOutCntMax = fadeTimeMax;	//フェードアウトのカウンタMAX
 
 //フェードイン
-int FadeInCntInit = FadeTimeMax;	//初期値
-int FadeInCnt = FadeInCntInit;		//フェードインのカウンタ
-int FadeInCntMax = FadeTimeMax;		//フェードインのカウンタMAX
+int fadeInCntInit = fadeTimeMax;	//初期値
+int fadeInCnt = fadeInCntInit;		//フェードアウトのカウンタ
+int fadeInCntMax = fadeTimeMax;		//フェードアウトのカウンタMAX
 
 //プロトタイプ宣言
 VOID Title(VOID);		//タイトル画面
@@ -53,9 +53,9 @@ VOID Play(VOID);		//プレイ画面
 VOID PlayProc(VOID);	//プレイ画面(処理)
 VOID PlayDraw(VOID);	//プレイ画面(描画)
 
-VOID End(VOID);		//エンド画面
-VOID EndProc(VOID);	//エンド画面(処理)
-VOID EndDraw(VOID);	//エンド画面(描画)
+VOID End(VOID);			//エンド画面
+VOID EndProc(VOID);		//エンド画面(処理)
+VOID EndDraw(VOID);		//エンド画面(描画)
 
 VOID Change(VOID);		//切り替え画面
 VOID ChangeProc(VOID);	//切り替え画面(処理)
@@ -64,7 +64,7 @@ VOID ChangeDraw(VOID);	//切り替え画面(描画)
 VOID ChangeScene(GAME_SCENE scene);	//シーン切り替え
 
 // プログラムは WinMain から始まります
-//Windowsのプログラミング方法=(WinAPI)で動いている！
+//Windowsのプログラミング方法 = (WinAPI)で動いている！
 //DxLibは、DirectXという、ゲームプログラミングをかんたんに使える仕組み
 int WINAPI WinMain(
 	HINSTANCE hInstance,
@@ -72,50 +72,55 @@ int WINAPI WinMain(
 	LPSTR lpCmdLine,
 	int nCmdShow)
 {
-	SetOutApplicationLogValidFlag(FALSE);					//Log.txtを出力しない
-	ChangeWindowMode(TRUE);									//ウィンドウモードに設定
-	SetMainWindowText(GAME_TITLE);							//ウィンドウのタイトルの文字
-	SetGraphMode(GAME_WIDTH, GAME_HEIGHT, GAME_COLOR);		//ウィンドウの解像度を設定
-	SetWindowSize(GAME_WIDTH, GAME_HEIGHT);					//ウィンドウの大きさを設定
-	SetBackgroundColor(255, 255, 255);						//デフォルトの背景の色
-	SetWindowIconID(GAME_ICON_ID);							//アイコンファイルを読み込み
-	SetWindowStyleMode(GAME_WINDOW_BAR);					//ウィンドウバーの状態
-	SetWaitVSyncFlag(TRUE);									//ディスプレイの垂直同期を有効にする
-	SetAlwaysRunFlag(TRUE);									//ウィンドウをずっとアクティブにする
+	SetOutApplicationLogValidFlag(FALSE);				//Log.txtを出力しない
+	ChangeWindowMode(TRUE);								//ウィンドウモードに設定
+	SetMainWindowText(GAME_TITLE);						//ウィンドウのタイトルの文字
+	SetGraphMode(GAME_WIDTH, GAME_HEIGHT, GAME_COLOR);	//ウィンドウの解像度を設定
+	SetWindowSize(GAME_WIDTH, GAME_HEIGHT);				//ウィンドウの大きさを設定
+	SetBackgroundColor(255, 255, 255);					//デフォルトの背景の色
+	SetWindowIconID(GAME_ICON_ID);						//アイコンファイルを読込
+	SetWindowStyleMode(GAME_WINDOW_BAR);				//ウィンドウバーの状態
+	SetWaitVSyncFlag(TRUE);								//ディスプレイの垂直同期を有効にする
+	SetAlwaysRunFlag(TRUE);								//ウィンドウをずっとアクティブにする
+	
 
-
-	if (DxLib_Init() == -1)		// ＤＸライブラリ初期化処理
+	//ＤＸライブラリ初期化処理
+	if (DxLib_Init() == -1)
 	{
-		return -1;				// エラーが起きたら直ちに終了
+		// エラーが起きたら直ちに終了
+		return -1;
 	}
+
 	//ダブルバッファリング有効化
 	SetDrawScreen(DX_SCREEN_BACK);
 
 	//円の中心点
 	int X = GAME_WIDTH / 2;
 	int Y = GAME_HEIGHT / 2;
+	int speed = 10;
 	//円の半径
-	int radius = 60;
+	int radius = 50;
 	int radius1 = 10;
 
-	int speed = 8;
-
-	//最初のシーンはタイトルから
+	//最初のシーンは、タイトル画面から
 	GameScene = GAME_SCENE_TITLE;
+
 	//無限ループ
 	while (1)
 	{
-
 		if (ProcessMessage() != 0) { break; }	//メッセージを受け取り続ける
-		if (ClearDrawScreen() != 0) { break; }	//画面を削除する
+		if (ClearDrawScreen() != 0) { break; }	//画面を消去する
 
 		//キーボード入力の更新
 		AllKeyUpdate();
 
-		//ESCキーで強制終了
-		if (KeyDown(KEY_INPUT_ESCAPE) == TRUE) { break; }
+		//FPS値の更新
+		FPSUpdate();
 
-		//
+		//ESCキーで強制終了
+		if (KeyClick(KEY_INPUT_ESCAPE) == TRUE) { break; }
+
+		//以前のシーンを取得
 		if (GameScene != GAME_SCENE_CHANGE)
 		{
 			OldGameScene = GameScene;
@@ -125,16 +130,16 @@ int WINAPI WinMain(
 		switch (GameScene)
 		{
 		case GAME_SCENE_TITLE:
-			Title();
+			Title();			//タイトル画面
 			break;
 		case GAME_SCENE_PLAY:
-			Play();
+			Play();				//プレイ画面
 			break;
 		case GAME_SCENE_END:
-			End();
+			End();				//エンド画面
 			break;
 		case GAME_SCENE_CHANGE:
-			Change();
+			Change();			//切り替え画面
 			break;
 		default:
 			break;
@@ -184,30 +189,37 @@ int WINAPI WinMain(
 				X += speed;
 			}
 		}
-		if (KeyClick(KEY_INPUT_SPACE) == TRUE)
-		{
-			DrawCircle(X, Y, radius1, GetColor(255, 0, 255), TRUE);
-			ScreenFlip();
-		}
-
 		DrawCircle(X, Y, radius, GetColor(0, 255, 0), TRUE);
+
+		//FPS値を描画
+		FPSDraw();
+
+		//FPS値を待つ
+		FPSWait();
+		
 		ScreenFlip();		//ダブルバッファリングした画面を描画
 	}
-	// ＤＸライブラリ使用の終了処理
-		DxLib_End();
 
-		return 0;				// ソフトの終了 
+
+	//ＤＸライブラリ使用の終了処理
+	DxLib_End();
+
+	return 0;	// ソフトの終了 
 }
+
 /// <summary>
 /// シーンを切り替える関数
 /// </summary>
 /// <param name="scene">シーン</param>
 VOID ChangeScene(GAME_SCENE scene)
 {
-	GameScene = scene;				//画面へ切り替え
-	IsFadeIn = FALSE;				//フェードインしない
-	IsFadeOut = TRUE;				//フェードアウトする
+	GameScene = scene;	//シーンを切り替え
+	IsFadeIn = FALSE;	//フェードインしない
+	IsFadeOut = TRUE;	//フェードアウトする
+
+	return;
 }
+
 /// <summary>
 /// タイトル画面
 /// </summary>
@@ -224,25 +236,30 @@ VOID Title(VOID)
 /// </summary>
 VOID TitleProc(VOID)
 {
-	
+
 	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
 	{
-		//シーンへ切り替え
+		//シーン切り替え
 		//次のシーンの初期化をここで行うと楽
 
 		//プレイ画面に切り替え
 		ChangeScene(GAME_SCENE_PLAY);
 	}
+
 	return;
 }
+
 /// <summary>
 /// タイトル画面の描画
 /// </summary>
 VOID TitleDraw(VOID)
 {
-	DrawString(0, 0, "タイトル画面", GetColor(0, 0, 0));
+
+	DrawString(0, 0, "タイトル画面\n \nenterキーでプレイ画面へ", GetColor(0, 0, 0));
+	DrawString(GAME_WIDTH - 180, GAME_HEIGHT - 120, "Wと↑は上に進む\nAと←は左に進む\nDと→は右に進む\nSと↓は下に進む\nshiftキーでダッシュ", GetColor(0, 0, 0));
 	return;
 }
+
 /// <summary>
 /// プレイ画面
 /// </summary>
@@ -261,20 +278,22 @@ VOID PlayProc(VOID)
 {
 	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
 	{
-		//シーンへ切り替え
+		//シーン切り替え
 		//次のシーンの初期化をここで行うと楽
 
 		//エンド画面に切り替え
 		ChangeScene(GAME_SCENE_END);
 	}
+
 	return;
 }
+
 /// <summary>
 /// プレイ画面の描画
 /// </summary>
 VOID PlayDraw(VOID)
 {
-	DrawString(0, 0, "プレイ画面", GetColor(0, 0, 0));
+	DrawString(0, 0, "プレイ画面 \n \nenterキーでエンド画面へ", GetColor(0, 0, 0));
 	return;
 }
 
@@ -296,20 +315,22 @@ VOID EndProc(VOID)
 {
 	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
 	{
-		//シーンへ切り替え
+		//シーン切り替え
 		//次のシーンの初期化をここで行うと楽
 
 		//タイトル画面に切り替え
 		ChangeScene(GAME_SCENE_TITLE);
 	}
+
 	return;
 }
+
 /// <summary>
 /// エンド画面の描画
 /// </summary>
 VOID EndDraw(VOID)
 {
-	DrawString(0, 0, "エンド画面", GetColor(0, 0, 0));
+	DrawString(0, 0, "エンド画面 \n \nenterキーでタイトルへ", GetColor(0, 0, 0));
 	return;
 }
 
@@ -329,49 +350,51 @@ VOID Change(VOID)
 /// </summary>
 VOID ChangeProc(VOID)
 {
-	//フェードイン
-	if (IsFadeIn)
-	{
 
-		if (FadeInCnt > FadeInCntMax)
+	//フェードイン
+	if (IsFadeIn == TRUE)
+	{
+		if (fadeInCnt > fadeInCntMax)
 		{
-			FadeInCnt--;		//カウンタを減らす
+			fadeInCnt--;	//カウンタを減らす
 		}
 		else
 		{
 			//フェードイン処理が終わった
 
-			FadeInCnt = FadeInCntInit;	//カウンタ初期化
+			fadeInCnt = fadeInCntInit;	//カウンタ初期化
 			IsFadeIn = FALSE;			//フェードイン処理終了
 		}
 	}
-	//フェードアウト
-	if (IsFadeOut)
-	{
 
-		if (FadeOutCnt > FadeOutCntMax)
+	//フェードアウト
+	if (IsFadeOut == TRUE)
+	{
+		if (fadeOutCnt < fadeOutCntMax)
 		{
-			FadeOutCnt--;		//カウンタを増やす
+			fadeOutCnt++;	//カウンタを増やす
 		}
 		else
 		{
 			//フェードアウト処理が終わった
 
-			FadeOutCnt = FadeOutCntInit;	//カウンタ初期化
-			IsFadeOut = FALSE;			//フェードアウト処理終了
+			fadeOutCnt = fadeOutCntInit;	//カウンタ初期化
+			IsFadeOut = FALSE;				//フェードアウト処理終了
 		}
 	}
 
 	//切り替え処理終了
 	if (IsFadeIn == FALSE && IsFadeOut == FALSE)
 	{
-		//フェードインしてない、フェードアウトしてないとき
-		GameScene = NextGameScene;		//次のシーンに切り替え
-		OldGameScene = GameScene;		//以前のゲームシーン更新
-
+		//フェードインしていない、フェードアウトもしていないとき
+		GameScene = NextGameScene;	//次のシーンに切り替え
+		OldGameScene = GameScene;	//以前のゲームシーン更新
 	}
+
+
 	return;
 }
+
 /// <summary>
 /// 切り替え画面の描画
 /// </summary>
@@ -381,13 +404,13 @@ VOID ChangeDraw(VOID)
 	switch (OldGameScene)
 	{
 	case GAME_SCENE_TITLE:
-		TitleDraw();		//タイトル画面の描画
+		TitleDraw();	//タイトル画面の描画
 		break;
 	case GAME_SCENE_PLAY:
-		PlayDraw();			//プレイ画面の描画
+		PlayDraw();		//プレイ画面の描画
 		break;
 	case GAME_SCENE_END:
-		EndDraw();			//エンド画面の描画
+		EndDraw();		//エンド画面の描画
 		break;
 	default:
 		break;
@@ -396,13 +419,15 @@ VOID ChangeDraw(VOID)
 	//フェードイン
 	if (IsFadeIn == TRUE)
 	{
-		SetDrawBlendMode(DX_BLENDMODE_ALPHA, ((float)FadeInCnt / FadeInCntMax) * 255);
+		SetDrawBlendMode(DX_BLENDMODE_ALPHA, ((float)fadeInCnt / fadeInCntMax) * 255);
 	}
+
 	//フェードアウト
 	if (IsFadeOut == TRUE)
 	{
-		SetDrawBlendMode(DX_BLENDMODE_ALPHA, ((float)FadeOutCnt / FadeOutCntMax) * 255);
+		SetDrawBlendMode(DX_BLENDMODE_ALPHA, ((float)fadeOutCnt / fadeOutCntMax) * 255);
 	}
+
 	//四角を描画
 	DrawBox(0, 0, GAME_WIDTH, GAME_HEIGHT, GetColor(0, 0, 0), TRUE);
 
