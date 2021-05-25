@@ -1,7 +1,7 @@
 #pragma once
 
 //ヘッダファイルの読み込み
-#include "DxLib.h"
+#include "game.h"
 
 //マクロ定義
 #define GAME_FPS		60	//FPSの標準
@@ -24,6 +24,9 @@ struct FPS
 	int SampleRate = GAME_FPS;	//平均を取るサンプル値
 
 };
+
+//グローバル変数の外部参照
+extern FPS fps;		//FPSの管理
 
 //プロトタイプ宣言
 VOID FPSUpdate(VOID);	//FPS値を更新する
