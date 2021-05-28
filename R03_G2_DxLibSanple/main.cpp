@@ -23,6 +23,19 @@ struct CHARACTOR
 	BOOL IsDraw = FALSE;//画像が描画できる？
 };
 
+//動画の構造体
+struct MOVIE
+{
+	int handle = -1;	//動画のハンドル
+	char path[255];		//動画の場所
+
+	int x;				//X位置
+	int y;				//Y位置
+	int width;			//幅
+	int height;			//高さ
+
+	int Volume;			//ボリューム(最小)0～255(最大)
+};
 
 
 //グローバル変数
@@ -30,6 +43,9 @@ struct CHARACTOR
 GAME_SCENE GameScene;		//現在のゲームのシーン
 GAME_SCENE OldGameScene;	//前回のゲームのシーン
 GAME_SCENE NextGameScene;	//次のゲームのシーン
+
+//プレイ背景の動画
+MOVIE playMovie;
 
 //プレイヤー
 CHARACTOR player;
@@ -68,6 +84,10 @@ VOID PlayDraw(VOID);	//プレイ画面(描画)
 VOID Clear(VOID);			//クリア画面
 VOID ClearProc(VOID);		//クリア画面(処理)
 VOID ClearDraw(VOID);		//クリア画面(描画)
+
+VOID Gameover(VOID);			//ゲームオーバー画面
+VOID GameoverProc(VOID);		//ゲームオーバー画面(処理)
+VOID GameoverDraw(VOID);		//ゲームオーバー画面(描画)
 
 VOID End(VOID);			//エンド画面
 VOID EndProc(VOID);		//エンド画面(処理)
@@ -119,10 +139,35 @@ int WINAPI WinMain(
 
 	//ゲーム全体の初期化
 
+	//プレイ動画の背景を読み込み
+	strcpyDx(playMovie.path, ".\\Movie\\playMovie.mp4");	//パスのコピー
+	playMovie.handle = LoadGraph(playMovie.path);	//画像の読み込み
+
+	//画像が読み込めなかったときは、エラー(-1)が入る
+	if (playMovie.handle == -1)
+	{
+		MessageBox(
+			GetMainWindowHandle(),	//メインのウィンドウハンドル
+			playMovie.path,			//メッセージ本文
+			"画像読み込みエラー！",		//メッセージタイトル
+			MB_OK					//ボタン
+		);
+
+		DxLib_End();	//強制終了
+		return -1;		//エラー終了
+	}
+
+	//画像の幅と高さを取得
+	GetGraphSize(playMovie.handle, &playMovie.width, &playMovie.height);
+
+	//動画のボリューム
+	playMovie.Volume = 255;
+
 	//プレイヤーの画像を読み込み
-	strcpyDx(player.path, ".\\image\\player.jpg");	//パスのコピー
+	strcpyDx(player.path, ".\\image\\player.png");	//パスのコピー
 	player.handle = LoadGraph(player.path);	//画像の読み込み
 	
+
 	//画像が読み込めなかったときは、エラー(-1)が入る
 	if (player.handle == -1)
 	{
@@ -242,6 +287,12 @@ int WINAPI WinMain(
 		case GAME_SCENE_PLAY:
 			Play();				//プレイ画面
 			break;
+		case GAME_SCENE_CLEAR:
+			Clear();				//クリア画面
+			break;
+		case GAME_SCENE_GAMEOVER:
+			Clear();				//ゲームオーバー画面
+			break;
 		case GAME_SCENE_END:
 			End();				//エンド画面
 			break;
@@ -273,6 +324,7 @@ int WINAPI WinMain(
 	}
 
 	//終わるときの処理
+	DeleteGraph(playMovie.handle);	//画像をメモリ上から削除
 	DeleteGraph(player.handle);	//画像をメモリ上から削除
 	DeleteGraph(Goal.handle);	//画像をメモリ上から削除
 
@@ -413,6 +465,13 @@ VOID PlayProc(VOID)
 		ChangeScene(GAME_SCENE_CLEAR);
 		return;
 	}
+	//エネミーがゴールに当たった時は
+	if (OncollRect(Enemy.coll, Goal.coll) == TRUE)
+	{
+		//エンド画面に切り替え
+		ChangeScene(GAME_SCENE_GAMEOVER);
+		return;
+	}
 
 	return;
 }
@@ -422,6 +481,18 @@ VOID PlayProc(VOID)
 /// </summary>
 VOID PlayDraw(VOID)
 {
+	//背景動画を描画
+
+	//もし、動画が再生されてないとき
+	if (GetMovieStateToGraph(playMovie.handle) == 0)
+	{
+		//再生する
+		SeekMovieToGraph(playMovie.handle, 0);	//シークバーを最初に戻す
+		PlayMovieToGraph(playMovie.handle);		//動画を再生
+	}
+
+	//動画を描画(画面に合わせて画像を引き延ばす)
+	DrawExtendGraph(0, 0, GAME_WIDTH, GAME_HEIGHT, playMovie.handle, TRUE);
 	//プレイヤーを描画
 	if (player.IsDraw == TRUE)
 	{
@@ -543,7 +614,45 @@ VOID ClearProc(VOID)
 /// </summary>
 VOID ClearDraw(VOID)
 {
-	DrawString(GAME_WIDTH, GAME_HEIGHT, "Clear！", GetColor(0, 0, 0));
+	DrawString(0, 0, "クリア画面", GetColor(0, 0, 0));
+	DrawString(GAME_WIDTH / 2, GAME_HEIGHT / 2, "Clear！", GetColor(255, 255, 0));
+	return;
+}
+
+/// <summary>
+/// ゲームオーバー画面
+/// </summary>
+VOID Gameover(VOID)
+{
+	GameoverProc();	//処理
+	GameoverDraw();	//描画
+
+	return;
+}
+
+/// <summary>
+/// ゲームオーバー画面の処理
+/// </summary>
+VOID GameoverProc(VOID)
+{
+	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	{
+		//シーン切り替え
+		//次のシーンの初期化をここで行うと楽
+
+		//タイトル画面に切り替え
+		ChangeScene(GAME_SCENE_END);
+	}
+
+	return;
+}
+
+/// <summary>
+/// ゲームオーバー画面の描画
+/// </summary>
+VOID GameoverDraw(VOID)
+{
+	DrawString(0, 0, "ゲームオーバー画面", GetColor(0, 0, 0));
 	return;
 }
 
@@ -622,6 +731,12 @@ VOID ChangeDraw(VOID)
 	case GAME_SCENE_PLAY:
 		PlayDraw();		//プレイ画面の描画
 		break;
+	case GAME_SCENE_CLEAR:
+		ClearDraw();		//エンド画面の描画
+		break;
+	case GAME_SCENE_GAMEOVER:
+		GameoverDraw();		//ゲームオーバー画面の描画
+		break;
 	case GAME_SCENE_END:
 		EndDraw();		//エンド画面の描画
 		break;
@@ -697,12 +812,12 @@ VOID CollUpdate(CHARACTOR* chara)
 /// 矩形と矩形の当たり判定
 /// </summary>
 /// <param name="chara"></param>
-BOOL OncollRect(RECT player, RECT Goal)
+BOOL OncollRect(RECT a, RECT b)
 {
-	if (player.left < Goal.right &&		//矩形Aの左辺x座標 < 矩形Bの右辺x座標 かつ
-		player.right > Goal.left &&		//矩形Aの右辺x座標 < 矩形Bの左辺x座標 かつ
-		player.top < Goal.bottom &&		//矩形Aの左辺y座標 < 矩形Bの右辺y座標 かつ
-		player.bottom > Goal.top)		//矩形Aの右辺y座標 < 矩形Bの左辺y座標
+	if (a.left < b.right &&		//矩形Aの左辺x座標 < 矩形Bの右辺x座標 かつ
+		a.right > b.left &&		//矩形Aの右辺x座標 < 矩形Bの左辺x座標 かつ
+		a.top < b.bottom &&		//矩形Aの左辺y座標 < 矩形Bの右辺y座標 かつ
+		a.bottom > b.top)		//矩形Aの右辺y座標 < 矩形Bの左辺y座標
 	{
 		//当たっているとき
 		return TRUE;
