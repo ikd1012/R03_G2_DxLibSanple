@@ -23,6 +23,8 @@ struct CHARACTOR
 	BOOL IsDraw = FALSE;//画像が描画できる？
 };
 
+
+
 //グローバル変数
 //シーンを管理する変数
 GAME_SCENE GameScene;		//現在のゲームのシーン
@@ -63,6 +65,10 @@ VOID Play(VOID);		//プレイ画面
 VOID PlayProc(VOID);	//プレイ画面(処理)
 VOID PlayDraw(VOID);	//プレイ画面(描画)
 
+VOID Clear(VOID);			//クリア画面
+VOID ClearProc(VOID);		//クリア画面(処理)
+VOID ClearDraw(VOID);		//クリア画面(描画)
+
 VOID End(VOID);			//エンド画面
 VOID EndProc(VOID);		//エンド画面(処理)
 VOID EndDraw(VOID);		//エンド画面(描画)
@@ -76,6 +82,7 @@ VOID ChangeScene(GAME_SCENE scene);	//シーン切り替え
 VOID CollUpdatePlayer(CHARACTOR* chara);	//当たり判定の領域を更新
 VOID CollUpdateEnemy(CHARACTOR* chara);
 VOID CollUpdate(CHARACTOR* chara);
+BOOL OncollRect(RECT player, RECT Goal);	//矩形と矩形の当たり判定
 
 // プログラムは WinMain から始まります
 //Windowsのプログラミング方法 = (WinAPI)で動いている！
@@ -133,8 +140,7 @@ int WINAPI WinMain(
 	//画像の幅と高さを取得
 	GetGraphSize(player.handle, &player.width, &player.height);
 
-	//当たり判定を更新する
-	CollUpdatePlayer(&player);	//プレイヤーの当たり判定のアドレス
+	
 	
 	//プレイヤーを初期化
 	player.x = GAME_WIDTH / 2 - player.width / 2;	//中央寄せ
@@ -142,6 +148,8 @@ int WINAPI WinMain(
 	player.speed = 500;		//スピード
 	player.IsDraw = TRUE;	//描画できる！
 
+	//当たり判定を更新する
+	CollUpdatePlayer(&player);	//プレイヤーの当たり判定のアドレス
 
 	//プレイヤーの画像を読み込み
 	strcpyDx(Enemy.path, ".\\image\\Enemy.png");	//パスのコピー
@@ -164,14 +172,14 @@ int WINAPI WinMain(
 	//画像の幅と高さを取得
 	GetGraphSize(Enemy.handle, &Enemy.width, &Enemy.height);
 
-	//当たり判定を更新する
-	CollUpdateEnemy(&Enemy);	//プレイヤーの当たり判定のアドレス
-
 	//プレイヤーを初期化
 	Enemy.x = GAME_WIDTH  - Enemy.width;	
 	Enemy.y = GAME_HEIGHT - Enemy.height;
 	Enemy.speed = 500;		//スピード
 	Enemy.IsDraw = TRUE;	//描画できる！
+
+	//当たり判定を更新する
+	CollUpdateEnemy(&Enemy);	//プレイヤーの当たり判定のアドレス
 
 //プレイヤーの画像を読み込み
 	strcpyDx(Goal.path, ".\\image\\Goal.png");	//パスのコピー
@@ -194,14 +202,15 @@ int WINAPI WinMain(
 	//画像の幅と高さを取得
 	GetGraphSize(Goal.handle, &Goal.width, &Goal.height);
 
-	//当たり判定を更新する
-	CollUpdate(&Goal);	//プレイヤーの当たり判定のアドレス
 
 	//プレイヤーを初期化
 	Goal.x = GAME_WIDTH  - Goal.width;	
 	Goal.y = 0;
 	Goal.speed = 500;		//スピード
 	Goal.IsDraw = TRUE;	//描画できる！
+
+	//当たり判定を更新する
+	CollUpdate(&Goal);	//エネミーの当たり判定のアドレス
 
 	//無限ループ
 	while (1)
@@ -342,14 +351,16 @@ VOID Play(VOID)
 /// </summary>
 VOID PlayProc(VOID)
 {
-	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	/*if (KeyClick(KEY_INPUT_RETURN) == TRUE)
 	{
 		//シーン切り替え
 		//次のシーンの初期化をここで行うと楽
 
 		//エンド画面に切り替え
 		ChangeScene(GAME_SCENE_END);
-	}
+	}*/
+
+	
 
 	//プレイヤーの操作
 	if (KeyDown(KEY_INPUT_UP) == TRUE) 
@@ -387,7 +398,21 @@ VOID PlayProc(VOID)
 		Enemy.x += Enemy.speed * fps.DeltaTime;
 	}
 	//当たり判定を更新する
+	CollUpdatePlayer(&player);
+
+	//ゴールの当たり判定を更新する
+	CollUpdate(&Goal);
+
+	//当たり判定を更新する
 	CollUpdateEnemy(&Enemy);
+
+	//プレイヤーがゴールに当たった時は
+	if (OncollRect(player.coll, Goal.coll) == TRUE)
+	{
+		//エンド画面に切り替え
+		ChangeScene(GAME_SCENE_CLEAR);
+		return;
+	}
 
 	return;
 }
@@ -410,7 +435,7 @@ VOID PlayDraw(VOID)
 			DrawBox(player.coll.left, player.coll.top, player.coll.right, player.coll.bottom,
 				GetColor(255, 0, 0), FALSE);
 		}
-	
+
 	}
 
 	//ゴールを描画
@@ -442,6 +467,7 @@ VOID PlayDraw(VOID)
 				GetColor(255, 0, 0), FALSE);
 		}
 	}
+
 	
 	DrawString(0, 0, "プレイ画面", GetColor(0, 0, 0));
 	return;
@@ -481,6 +507,43 @@ VOID EndProc(VOID)
 VOID EndDraw(VOID)
 {
 	DrawString(0, 0, "エンド画面", GetColor(0, 0, 0));
+	return;
+}
+
+/// <summary>
+/// クリア画面
+/// </summary>
+VOID Clear(VOID)
+{
+	ClearProc();	//処理
+	ClearDraw();	//描画
+
+	return;
+}
+
+/// <summary>
+/// クリア画面の処理
+/// </summary>
+VOID ClearProc(VOID)
+{
+	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	{
+		//シーン切り替え
+		//次のシーンの初期化をここで行うと楽
+
+		//エンド画面に切り替え
+		ChangeScene(GAME_SCENE_END);
+	}
+
+	return;
+}
+
+/// <summary>
+/// クリア画面の描画
+/// </summary>
+VOID ClearDraw(VOID)
+{
+	DrawString(GAME_WIDTH, GAME_HEIGHT, "Clear！", GetColor(0, 0, 0));
 	return;
 }
 
@@ -630,3 +693,24 @@ VOID CollUpdate(CHARACTOR* chara)
 	return;
 }
 
+/// <summary>
+/// 矩形と矩形の当たり判定
+/// </summary>
+/// <param name="chara"></param>
+BOOL OncollRect(RECT player, RECT Goal)
+{
+	if (player.left < Goal.right &&		//矩形Aの左辺x座標 < 矩形Bの右辺x座標 かつ
+		player.right > Goal.left &&		//矩形Aの右辺x座標 < 矩形Bの左辺x座標 かつ
+		player.top < Goal.bottom &&		//矩形Aの左辺y座標 < 矩形Bの右辺y座標 かつ
+		player.bottom > Goal.top)		//矩形Aの右辺y座標 < 矩形Bの左辺y座標
+	{
+		//当たっているとき
+		return TRUE;
+	}
+	else
+	{
+		//当たってないとき
+		return FALSE;
+	}
+	
+}
