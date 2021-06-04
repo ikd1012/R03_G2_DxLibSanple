@@ -81,6 +81,10 @@ VOID Play(VOID);		//プレイ画面
 VOID PlayProc(VOID);	//プレイ画面(処理)
 VOID PlayDraw(VOID);	//プレイ画面(描画)
 
+//VOID Battle(VOID);		//バトル画面
+//VOID BattleProc(VOID);	//バトル画面(処理)
+//VOID BattleDraw(VOID);	//バトル画面(描画)
+
 VOID Clear(VOID);			//クリア画面
 VOID ClearProc(VOID);		//クリア画面(処理)
 VOID ClearDraw(VOID);		//クリア画面(描画)
@@ -103,6 +107,9 @@ VOID CollUpdatePlayer(CHARACTOR* chara);	//当たり判定の領域を更新
 VOID CollUpdateEnemy(CHARACTOR* chara);
 VOID CollUpdate(CHARACTOR* chara);
 BOOL OncollRect(RECT player, RECT Goal);	//矩形と矩形の当たり判定
+
+BOOL GameLoad(VOID);		//ゲームのデータを読み込み
+VOID GameInit(VOID);		//ゲームのデータを初期化
 
 // プログラムは WinMain から始まります
 //Windowsのプログラミング方法 = (WinAPI)で動いている！
@@ -139,123 +146,17 @@ int WINAPI WinMain(
 
 	//ゲーム全体の初期化
 
-	//プレイ動画の背景を読み込み
-	strcpyDx(playMovie.path, ".\\Movie\\playMovie.mp4");	//パスのコピー
-	playMovie.handle = LoadGraph(playMovie.path);	//画像の読み込み
-
-	//画像が読み込めなかったときは、エラー(-1)が入る
-	if (playMovie.handle == -1)
+	//ゲーム読み込み
+	if (!GameLoad())
 	{
-		MessageBox(
-			GetMainWindowHandle(),	//メインのウィンドウハンドル
-			playMovie.path,			//メッセージ本文
-			"画像読み込みエラー！",		//メッセージタイトル
-			MB_OK					//ボタン
-		);
-
-		DxLib_End();	//強制終了
-		return -1;		//エラー終了
+		//データを読み込みに失敗したとき
+		DxLib_End();	//DxLib終了
+		return -1;		//異常終了
 	}
 
-	//画像の幅と高さを取得
-	GetGraphSize(playMovie.handle, &playMovie.width, &playMovie.height);
+	//ゲームの初期化
+	GameInit();
 
-	//動画のボリューム
-	playMovie.Volume = 255;
-
-	//プレイヤーの画像を読み込み
-	strcpyDx(player.path, ".\\image\\player.png");	//パスのコピー
-	player.handle = LoadGraph(player.path);	//画像の読み込み
-	
-
-	//画像が読み込めなかったときは、エラー(-1)が入る
-	if (player.handle == -1)
-	{
-		MessageBox(
-			GetMainWindowHandle(),	//メインのウィンドウハンドル
-			player.path,			//メッセージ本文
-			"画像読み込みエラー！",		//メッセージタイトル
-			MB_OK					//ボタン
-		);
-
-		DxLib_End();	//強制終了
-		return -1;		//エラー終了
-	}
-
-	//画像の幅と高さを取得
-	GetGraphSize(player.handle, &player.width, &player.height);
-
-	
-	
-	//プレイヤーを初期化
-	player.x = GAME_WIDTH / 2 - player.width / 2;	//中央寄せ
-	player.y = GAME_HEIGHT / 2 - player.height / 2;	//中央寄せ
-	player.speed = 500;		//スピード
-	player.IsDraw = TRUE;	//描画できる！
-
-	//当たり判定を更新する
-	CollUpdatePlayer(&player);	//プレイヤーの当たり判定のアドレス
-
-	//プレイヤーの画像を読み込み
-	strcpyDx(Enemy.path, ".\\image\\Enemy.png");	//パスのコピー
-	Enemy.handle = LoadGraph(Enemy.path);	//画像の読み込み
-
-	//画像が読み込めなかったときは、エラー(-1)が入る
-	if (Enemy.handle == -1)
-	{
-		MessageBox(
-			GetMainWindowHandle(),	//メインのウィンドウハンドル
-			Enemy.path,			//メッセージ本文
-			"画像読み込みエラー！",		//メッセージタイトル
-			MB_OK					//ボタン
-		);
-
-		DxLib_End();	//強制終了
-		return -1;		//エラー終了
-	}
-
-	//画像の幅と高さを取得
-	GetGraphSize(Enemy.handle, &Enemy.width, &Enemy.height);
-
-	//プレイヤーを初期化
-	Enemy.x = GAME_WIDTH  - Enemy.width;	
-	Enemy.y = GAME_HEIGHT - Enemy.height;
-	Enemy.speed = 500;		//スピード
-	Enemy.IsDraw = TRUE;	//描画できる！
-
-	//当たり判定を更新する
-	CollUpdateEnemy(&Enemy);	//プレイヤーの当たり判定のアドレス
-
-//プレイヤーの画像を読み込み
-	strcpyDx(Goal.path, ".\\image\\Goal.png");	//パスのコピー
-	Goal.handle = LoadGraph(Goal.path);	//画像の読み込み
-
-	//画像が読み込めなかったときは、エラー(-1)が入る
-	if (Goal.handle == -1)
-	{
-		MessageBox(
-			GetMainWindowHandle(),	//メインのウィンドウハンドル
-			Goal.path,			//メッセージ本文
-			"画像読み込みエラー！",		//メッセージタイトル
-			MB_OK					//ボタン
-		);
-
-		DxLib_End();	//強制終了
-		return -1;		//エラー終了
-	}
-
-	//画像の幅と高さを取得
-	GetGraphSize(Goal.handle, &Goal.width, &Goal.height);
-
-
-	//プレイヤーを初期化
-	Goal.x = GAME_WIDTH  - Goal.width;	
-	Goal.y = 0;
-	Goal.speed = 500;		//スピード
-	Goal.IsDraw = TRUE;	//描画できる！
-
-	//当たり判定を更新する
-	CollUpdate(&Goal);	//エネミーの当たり判定のアドレス
 
 	//無限ループ
 	while (1)
@@ -287,11 +188,14 @@ int WINAPI WinMain(
 		case GAME_SCENE_PLAY:
 			Play();				//プレイ画面
 			break;
+		//case GAME_SCENE_BATTLE:
+			//Battle();				//バトル画面
+			//break;
 		case GAME_SCENE_CLEAR:
 			Clear();				//クリア画面
 			break;
 		case GAME_SCENE_GAMEOVER:
-			Clear();				//ゲームオーバー画面
+			Gameover();				//ゲームオーバー画面
 			break;
 		case GAME_SCENE_END:
 			End();				//エンド画面
@@ -335,6 +239,146 @@ int WINAPI WinMain(
 }
 
 /// <summary>
+/// ゲームデータを読み込み
+/// </summary>
+/// <param name="chara">読み込めたらTRUE / 読み込めなかったらFALSE</param>
+BOOL GameLoad()
+{
+	//プレイ動画の背景を読み込み
+	strcpyDx(playMovie.path, ".\\Movie\\playMovie.mp4");	//パスのコピー
+	playMovie.handle = LoadGraph(playMovie.path);	//画像の読み込み
+
+	//画像が読み込めなかったときは、エラー(-1)が入る
+	if (playMovie.handle == -1)
+	{
+		MessageBox(
+			GetMainWindowHandle(),	//メインのウィンドウハンドル
+			playMovie.path,			//メッセージ本文
+			"画像読み込みエラー！",		//メッセージタイトル
+			MB_OK					//ボタン
+		);
+
+		return FALSE;		//読み込み失敗
+	}
+
+	//画像の幅と高さを取得
+	GetGraphSize(playMovie.handle, &playMovie.width, &playMovie.height);
+
+	//動画のボリューム
+	playMovie.Volume = 255;
+
+	//プレイヤーの画像を読み込み
+	strcpyDx(player.path, ".\\image\\player.png");	//パスのコピー
+	player.handle = LoadGraph(player.path);	//画像の読み込み
+
+
+	//画像が読み込めなかったときは、エラー(-1)が入る
+	if (player.handle == -1)
+	{
+		MessageBox(
+			GetMainWindowHandle(),	//メインのウィンドウハンドル
+			player.path,			//メッセージ本文
+			"画像読み込みエラー！",		//メッセージタイトル
+			MB_OK					//ボタン
+		);
+
+		return FALSE;		//読み込み失敗
+	}
+
+	//画像の幅と高さを取得
+	GetGraphSize(player.handle, &player.width, &player.height);
+
+
+
+	
+
+	//プレイヤーの画像を読み込み
+	strcpyDx(Enemy.path, ".\\image\\Enemy.png");	//パスのコピー
+	Enemy.handle = LoadGraph(Enemy.path);	//画像の読み込み
+
+	//画像が読み込めなかったときは、エラー(-1)が入る
+	if (Enemy.handle == -1)
+	{
+		MessageBox(
+			GetMainWindowHandle(),	//メインのウィンドウハンドル
+			Enemy.path,			//メッセージ本文
+			"画像読み込みエラー！",		//メッセージタイトル
+			MB_OK					//ボタン
+		);
+
+		return FALSE;		//読み込み失敗
+	}
+
+	//画像の幅と高さを取得
+	GetGraphSize(Enemy.handle, &Enemy.width, &Enemy.height);
+
+	//敵を初期化
+	Enemy.x = GAME_WIDTH - Enemy.width;
+	Enemy.y = GAME_HEIGHT - Enemy.height;
+	Enemy.speed = 500;		//スピード
+	Enemy.IsDraw = TRUE;	//描画できる！
+
+	//当たり判定を更新する
+	CollUpdateEnemy(&Enemy);	//プレイヤーの当たり判定のアドレス
+
+//プレイヤーの画像を読み込み
+	strcpyDx(Goal.path, ".\\image\\Goal.png");	//パスのコピー
+	Goal.handle = LoadGraph(Goal.path);	//画像の読み込み
+
+	//画像が読み込めなかったときは、エラー(-1)が入る
+	if (Goal.handle == -1)
+	{
+		MessageBox(
+			GetMainWindowHandle(),	//メインのウィンドウハンドル
+			Goal.path,			//メッセージ本文
+			"画像読み込みエラー！",		//メッセージタイトル
+			MB_OK					//ボタン
+		);
+
+		return FALSE;		//読み込み失敗
+	}
+
+	//画像の幅と高さを取得
+	GetGraphSize(Goal.handle, &Goal.width, &Goal.height);
+
+
+	//ゴールを初期化
+	Goal.x = GAME_WIDTH - Goal.width;
+	Goal.y = 0;
+	Goal.speed = 500;		//スピード
+	Goal.IsDraw = TRUE;	//描画できる！
+
+	//当たり判定を更新する
+	CollUpdate(&Goal);	//ゴールの当たり判定のアドレス
+
+	return TRUE;		//すべて読み込めた！
+}
+
+/// <summary>
+/// ゲームデータを初期化
+/// </summary>
+/// <param name="chara"></param>
+VOID GameInit(VOID)
+{
+	//敵を初期化
+	Enemy.x = GAME_WIDTH - Enemy.width;
+	Enemy.y = GAME_HEIGHT - Enemy.height;
+	Enemy.speed = 500;		//スピード
+	Enemy.IsDraw = TRUE;	//描画できる！
+
+	//当たり判定を更新する
+	CollUpdateEnemy(&Enemy);	//プレイヤーの当たり判定のアドレス
+
+	//プレイヤーを初期化
+	player.x = GAME_WIDTH / 2 - player.width / 2;	//中央寄せ
+	player.y = GAME_HEIGHT / 2 - player.height / 2;	//中央寄せ
+	player.speed = 500;		//スピード
+	player.IsDraw = TRUE;	//描画できる！
+
+	//当たり判定を更新する
+	CollUpdatePlayer(&player);	//プレイヤーの当たり判定のアドレス
+}
+/// <summary>
 /// シーンを切り替える関数
 /// </summary>
 /// <param name="scene">シーン</param>
@@ -368,6 +412,9 @@ VOID TitleProc(VOID)
 	{
 		//シーン切り替え
 		//次のシーンの初期化をここで行うと楽
+
+		//ゲームの初期化
+		GameInit();
 
 		//プレイ画面に切り替え
 		ChangeScene(GAME_SCENE_PLAY);
@@ -465,6 +512,7 @@ VOID PlayProc(VOID)
 		ChangeScene(GAME_SCENE_CLEAR);
 		return;
 	}
+
 	//エネミーがゴールに当たった時は
 	if (OncollRect(Enemy.coll, Goal.coll) == TRUE)
 	{
@@ -473,6 +521,15 @@ VOID PlayProc(VOID)
 		return;
 	}
 
+	//プレイヤーがエネミーに当たった時は
+	/*
+	if (OncollRect(player.coll, Enemy.coll) == TRUE)
+	{
+		//バトル画面に切り替え
+		ChangeScene(GAME_SCENE_BATTLE);
+		return;
+	}
+*/
 	return;
 }
 
@@ -543,7 +600,46 @@ VOID PlayDraw(VOID)
 	DrawString(0, 0, "プレイ画面", GetColor(0, 0, 0));
 	return;
 }
+/*
+/// <summary>
+/// バトル画面
+/// </summary>
+VOID Battle(VOID)
+{
+	BattleProc();	//処理
+	BattleDraw();	//描画
 
+	return;
+}
+
+/// <summary>
+/// バトル画面の処理
+/// </summary>
+VOID BattleProc(VOID)
+{
+
+	if (KeyClick(KEY_INPUT_RETURN) == TRUE)
+	{
+		//シーン切り替え
+		//次のシーンの初期化をここで行うと楽
+
+		//プレイ画面に切り替え
+		ChangeScene(GAME_SCENE_PLAY);
+	}
+
+	return;
+}
+
+/// <summary>
+/// バトル画面の描画
+/// </summary>
+VOID BattleDraw(VOID)
+{
+
+	DrawString(0, 0, "バトル画面", GetColor(0, 0, 0));
+	return;
+}
+*/
 /// <summary>
 /// エンド画面
 /// </summary>
@@ -731,6 +827,10 @@ VOID ChangeDraw(VOID)
 	case GAME_SCENE_PLAY:
 		PlayDraw();		//プレイ画面の描画
 		break;
+	
+	///case GAME_SCENE_BATTLE:
+		//BattleDraw();		//バトル画面の描画
+		//break;
 	case GAME_SCENE_CLEAR:
 		ClearDraw();		//エンド画面の描画
 		break;
