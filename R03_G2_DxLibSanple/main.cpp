@@ -71,6 +71,11 @@ AUDIO GameoverBGM;
 AUDIO EndBGM;
 AUDIO BattleBGM;
 
+//効果音
+AUDIO PlayerSE;
+
+
+
 //画面の切り替え
 BOOL IsFadeOut = FALSE;		//フェードアウト
 BOOL IsFadeIn = FALSE;		//フェードイン
@@ -257,6 +262,8 @@ int WINAPI WinMain(
 	DeleteSoundMem(GameoverBGM.handle);	//音楽をメモリ上から削除
 	//DeleteSoundMem(BattleBGM.handle);	//音楽をメモリ上から削除
 	DeleteSoundMem(EndBGM.handle);	//音楽をメモリ上から削除
+	DeleteSoundMem(PlayerSE.handle);	//効果音をメモリ上から削除
+
 
 	//ＤＸライブラリ使用の終了処理
 	DxLib_End();
@@ -366,6 +373,8 @@ BOOL GameLoad()
 	if (!LoadAudio(&GameoverBGM, ".\\Audio\\GameoverBGM.mp3", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
 	if (!LoadAudio(&EndBGM, ".\\Audio\\EndBGM.mp3", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
 	//if (!LoadAudio(&BattleBGM, ".\\Audio\\BattleBGM.mp3", 255, DX_PLAYTYPE_LOOP)) { return FALSE; }
+	if (!LoadAudio(&PlayerSE, ".\\Audio\\PlayerSE.mp3", 255, DX_PLAYTYPE_BACK)) { return FALSE; }
+	
 
 	return TRUE;	//全て読み込みた！
 }
@@ -546,18 +555,50 @@ VOID PlayProc(VOID)
 	if (KeyDown(KEY_INPUT_UP) == TRUE) 
 	{
 		player.y -= player.speed * fps.DeltaTime;
+
+		//効果音が流れてないとき
+		if (CheckSoundMem(PlayerSE.handle) == 0)
+		{
+		//動く時の効果音を追加
+		PlaySoundMem(PlayerSE.handle, PlayerSE.playType);
+		}
+
 	}
 	if (KeyDown(KEY_INPUT_DOWN) == TRUE)
 	{
 		player.y += player.speed * fps.DeltaTime;
+
+		//効果音が流れてないとき
+		if (CheckSoundMem(PlayerSE.handle) == 0)
+		{
+			//動く時の効果音を追加
+			PlaySoundMem(PlayerSE.handle, PlayerSE.playType);
+		}
+		
 	}
 	if (KeyDown(KEY_INPUT_LEFT) == TRUE)
 	{
 		player.x -= player.speed * fps.DeltaTime;
+		
+		//効果音が流れてないとき
+		if (CheckSoundMem(PlayerSE.handle) == 0)
+		{
+			//動く時の効果音を追加
+			PlaySoundMem(PlayerSE.handle, PlayerSE.playType);
+		}
+		
 	}
 	if (KeyDown(KEY_INPUT_RIGHT) == TRUE)
 	{
 		player.x += player.speed * fps.DeltaTime;
+
+		//効果音が流れてないとき
+		if (CheckSoundMem(PlayerSE.handle) == 0)
+		{
+			//動く時の効果音を追加
+			PlaySoundMem(PlayerSE.handle, PlayerSE.playType);
+		}
+
 	}
 
 	//敵の操作
